@@ -1,0 +1,58 @@
+{
+  "name": "parametric-kit",
+  "version": "0.0.0",
+  "description": "Shared toolkit for browser-based parametric 3D-print generators: Manifold CSG lifetimes, schema-driven parameter panels, a tuned Three.js viewer, readout/export helpers and geometry test probes.",
+  "homepage": "https://github.com/j0nas/parametric-kit#readme",
+  "bugs": {
+    "url": "https://github.com/j0nas/parametric-kit/issues"
+  },
+  "license": "MIT",
+  "author": "Jonas Jensen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/j0nas/parametric-kit.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "dev": "vp pack --watch",
+    "test": "vp test --run",
+    "test:watch": "vp test",
+    "check": "vp check",
+    "prepublishOnly": "vp run build",
+    "prepare": "vp config"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.2",
+    "@types/three": "^0.184.1",
+    "@typescript/native-preview": "7.0.0-dev.20260509.2",
+    "bumpp": "^11.1.0",
+    "happy-dom": "^20.0.0",
+    "manifold-3d": "3.5.1",
+    "three": "^0.184.0",
+    "typescript": "^6.0.3",
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "peerDependencies": {
+    "manifold-3d": "^3.5.1",
+    "three": ">=0.180.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.11.0",
+      "onFail": "download"
+    }
+  }
+}
