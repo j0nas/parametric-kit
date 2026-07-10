@@ -1,0 +1,31 @@
+name: Notify consumers
+
+# Consumer apps don't depend on a published version of this kit — they build it
+# from source in their own deploys, checking this repo out as a sibling. That means
+# a push here changes nothing on their live sites until each one rebuilds, so every
+# push to main has to poke its consumers to redeploy. The matrix below is the list
+# of consumers; add a new consumer app's repo there when it starts building the kit.
+#
+# The poke is a repository_dispatch (`kit-updated`) sent with a fine-grained PAT that
+# has Contents: read+write on the consumer repos, stored as the CONSUMER_DISPATCH_TOKEN
+# secret. Re-fire manually from the Actions tab (workflow_dispatch) if needed.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [j0nas/laser-mtg-deck-box]
+    steps:
+      - run: gh api -X POST repos/${{ matrix.repo }}/dispatches -f event_type=kit-updated
+        env:
+          GH_TOKEN: ${{ secrets.CONSUMER_DISPATCH_TOKEN }}
