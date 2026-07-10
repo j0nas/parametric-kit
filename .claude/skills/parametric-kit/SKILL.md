@@ -1,6 +1,6 @@
 ---
 name: parametric-kit
-description: Building or modifying a browser-based parametric 3D-print generator app — manifold-3d CSG + a tuned Three.js viewer that previews and exports print-ready STL from one set of geometry builders — or consuming/extending the parametric-kit library (subpath modules /csg /params /viewer /readout /export /testkit). Load when writing a param schema, dims(), pure geometry builders, viewer/panel wiring, or the GitHub-Pages + jonas-jensen.com deploy for such an app.
+description: Building or modifying a browser-based parametric fabrication-file generator app — 3D printing (manifold-3d CSG → STL) or laser cutting (2D panel outlines → SVG), both with a tuned Three.js preview built from the same geometry that exports — or consuming/extending the parametric-kit library (subpath modules /csg /params /viewer /readout /export /testkit). Load when writing a param schema, dims(), pure geometry/panel builders, viewer/panel wiring, or the GitHub-Pages + jonas-jensen.com deploy for such an app.
 ---
 
 # parametric-kit
@@ -275,6 +275,11 @@ test("body fills its advertised footprint", () => {
 // disc — proves a pocket floor bottoms out exactly where a feature (e.g. a magnet) should.
 ```
 
+2D-panel apps get polygon probes instead (no WASM, no `initCSG`):
+`pointInPolygon(outline, x, y)` — probe that a cutout/feature is void or material exactly where it
+should be (probe clearly inside/outside features, never on an edge); `signedArea(outline)` — exact
+shoelace area, positive ⇔ CCW winding (y-up), so it doubles as a winding assertion.
+
 ## New-app recipe (ordered)
 
 1. **Scaffold:** `vp create vite:application` → choose **Vanilla TS** (NOT React; the panel is
@@ -305,6 +310,34 @@ test("body fills its advertised footprint", () => {
 build`) → `upload-pages-artifact path: dist`; a `deploy` job needs it. `base: "./"` makes the
     bundle path-agnostic.
 12. **Register on jonas-jensen.com** (see next section).
+
+## Variant: 2D-panel apps (laser cutting) — proven by laser-mtg-deck-box
+
+The kit carries a flat-panel generator (outlines → SVG cut files) with only these deltas from the
+recipe above:
+
+- **No CSG:** skip `manifold-3d` and `parametric-kit/csg` entirely. Silence the kit's peer warning
+  in `pnpm-workspace.yaml`: `peerDependencyRules.ignoreMissing: ["manifold-3d"]`. No `initCSG`
+  anywhere — tests are pure Node from line one.
+- **Geometry model:** instead of `Params -> BufferGeometry`, builders produce a serializable
+  `Panel[]` — `{ id, outline: [x,y][] (closed CCW, kerf-compensated), holes (CW), size, place }` —
+  consumed by BOTH the SVG exporter and the 3D preview, so cut file and preview can't drift. The
+  preview extrudes outlines with `THREE.ExtrudeGeometry` (wire `holes` via `THREE.Path`; material
+  group 0 = sheet faces, group 1 = cut walls — tint the walls darker as end grain so joints read).
+- **Export:** build the SVG string yourself (real-mm `width`/`viewBox`, one path per part,
+  hairline stroke) and ship it with `downloadText(name, svg, "image/svg+xml")`. Lay parts out with
+  a shelf packer honoring a part gap; report oversize parts instead of dropping them.
+- **Kerf belongs in the outline math** (grow fingers/shrink slots at joint boundaries), never as a
+  polygon post-offset; keep each panel's outer envelope nominal.
+- **Tests:** `pointInPolygon`/`signedArea` from testkit + interval math on shared edges
+  (complementarity: fingers of one panel exactly partition against the mating panel's slots).
+
+## App-owned view controls (both app kinds)
+
+`renderPanel` renders ONLY schema params. View state (preview mode select, explode slider, show/hide
+toggles) is app chrome: keep it out of the schema (it must not persist or dirty presets), put it in
+a hand-written `<section class="group">` after the `#controls` div reusing the same row/sel classes,
+and have its listeners call `rebuild()` directly.
 
 ## Site registration (jonas-jensen.com embedded app)
 

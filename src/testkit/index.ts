@@ -1,7 +1,8 @@
-// Geometry test probes for consuming apps' own suites: build the real solids through the Manifold
-// kernel (Node build, no DOM) and probe the meshes — bounding boxes, volumes, and vertex positions.
-// These catch what pure-math parameter tests can't: a cut in the wrong place, a boss that got clipped,
-// an opening that broke through a margin.
+// Geometry test probes for consuming apps' own suites. The mesh probes (bbox, volume,
+// verticesOnDisc) run on real solids built through the Manifold kernel (Node build, no DOM); the
+// polygon probes (pointInPolygon, signedArea) serve 2D-panel apps (laser cutting), whose geometry
+// is outlines rather than meshes. Both catch what pure-math parameter tests can't: a cut in the
+// wrong place, a boss that got clipped, an opening that broke through a margin.
 
 import type { BufferGeometry } from "three";
 
@@ -43,6 +44,33 @@ export function volume(g: BufferGeometry): number {
     v += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
   }
   return Math.abs(v);
+}
+
+// --- 2D polygon probes (panel/outline apps) --------------------------------------------------
+
+export type Pt2 = readonly [number, number];
+
+// Ray-casting point-in-polygon on a closed outline (first point not repeated). Points exactly on
+// an edge are unspecified — probe clearly inside or outside a feature, never on its boundary.
+export function pointInPolygon(outline: readonly Pt2[], x: number, y: number): boolean {
+  let inside = false;
+  for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) {
+    const [xi, yi] = outline[i]!;
+    const [xj, yj] = outline[j]!;
+    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+// Shoelace area: positive for counter-clockwise winding (y-up), so it doubles as a winding check.
+export function signedArea(outline: readonly Pt2[]): number {
+  let a = 0;
+  for (let i = 0; i < outline.length; i++) {
+    const [x1, y1] = outline[i]!;
+    const [x2, y2] = outline[(i + 1) % outline.length]!;
+    a += x1 * y2 - x2 * y1;
+  }
+  return a / 2;
 }
 
 // Count mesh vertices inside a horizontal disc — used to prove a pocket floor exists exactly where a

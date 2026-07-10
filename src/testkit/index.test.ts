@@ -1,6 +1,6 @@
 import { BoxGeometry, BufferAttribute, BufferGeometry } from "three";
 import { describe, expect, test } from "vite-plus/test";
-import { bbox, verticesOnDisc, volume } from "./index.ts";
+import { bbox, pointInPolygon, signedArea, verticesOnDisc, volume } from "./index.ts";
 
 describe("bbox", () => {
   test("spans the extents of an origin-centred box", () => {
@@ -36,5 +36,31 @@ describe("verticesOnDisc", () => {
   test("a radius that excludes everything counts zero", () => {
     expect(verticesOnDisc(g, 0, 0, 5, 0.5)).toBe(1); // only the centre vert
     expect(verticesOnDisc(g, 50, 50, 5, 1)).toBe(0);
+  });
+});
+
+describe("polygon probes", () => {
+  // An L-shape: CCW, concave corner at (2, 2).
+  const L: [number, number][] = [
+    [0, 0],
+    [4, 0],
+    [4, 2],
+    [2, 2],
+    [2, 4],
+    [0, 4],
+  ];
+
+  test("pointInPolygon handles convex and concave regions", () => {
+    expect(pointInPolygon(L, 1, 1)).toBe(true);
+    expect(pointInPolygon(L, 3, 1)).toBe(true);
+    expect(pointInPolygon(L, 1, 3)).toBe(true);
+    expect(pointInPolygon(L, 3, 3)).toBe(false); // the notch of the L
+    expect(pointInPolygon(L, 5, 1)).toBe(false);
+    expect(pointInPolygon(L, -1, 1)).toBe(false);
+  });
+
+  test("signedArea: exact value, sign flips with winding", () => {
+    expect(signedArea(L)).toBeCloseTo(12, 9); // 4×4 minus the 2×2 notch
+    expect(signedArea([...L].reverse())).toBeCloseTo(-12, 9);
   });
 });
