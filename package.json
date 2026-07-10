@@ -18,6 +18,12 @@
   "type": "module",
   "exports": {
     ".": "./dist/index.mjs",
+    "./csg": "./dist/csg/index.mjs",
+    "./export": "./dist/export/index.mjs",
+    "./params": "./dist/params/index.mjs",
+    "./readout": "./dist/readout/index.mjs",
+    "./testkit": "./dist/testkit/index.mjs",
+    "./viewer": "./dist/viewer/index.mjs",
     "./package.json": "./package.json"
   },
   "publishConfig": {
