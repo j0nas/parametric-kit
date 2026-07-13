@@ -11,4 +11,4 @@ export { applyPreset, definePresets, matchPreset } from "./presets.ts";
 export type { Preset, PresetGroup } from "./presets.ts";
 
 export { renderPanel } from "./panel.ts";
-export type { GroupSpec, HintSpec, Panel, RenderPanelOptions } from "./panel.ts";
+export type { CollapseSpec, GroupSpec, HintSpec, Panel, RenderPanelOptions } from "./panel.ts";

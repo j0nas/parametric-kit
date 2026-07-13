@@ -162,8 +162,9 @@ readout / buttons outside it).
 import { renderPanel } from "parametric-kit/params";
 const panel = renderPanel(document.getElementById("controls")!, schema, params, {
   presets: [decks, items],
+  collapsible: { key: "my-app:collapse:v1" }, // optional accordion; true = no persisted state
   groups: [
-    { id: "cards", title: "Cards", presets: ["deck"] }, // presets render at the top of this block
+    { id: "cards", title: "Cards", presets: ["deck"], open: true }, // presets render at the top of this block
     { id: "shell", title: "Shell" },
     { id: "opening", visibleWhen: (p) => p.bodyStyle !== "solid" }, // no title -> continues "Shell" section
     { id: "lid", title: "Lid", hint: (p) => CLOSURE_HINTS[p.lidStyle] }, // hint: string | (p)=>string
@@ -181,6 +182,14 @@ current section** — that is how one visual section holds several independently
 `maxKey` makes a num slider's ceiling track another field. The panel emits these class names for you
 to style: `.group` (section) · `.row` (num slider) · `.sel` (pick / preset select) · `.toggle`
 (checkbox) · `.sub` (hint). renderPanel calls `sync()` itself on first paint (normalising ceilings).
+
+Accordion: with `collapsible` set, every titled group renders `<details class="group"><summary><h2>`
+instead of a plain section (title-less groups still continue the current one, so they collapse with
+it). Sections default CLOSED — mark the primary group `open: true`. `{ key }` persists the user's
+toggles in localStorage as a `{groupId: boolean}` map; user choices override the app's `open`
+defaults on reload. App-owned hand-written sections can be `<details class="group">` too and share
+the same key (write their element id into the same blob). Style `summary` yourself (hide the marker,
+add a chevron via `::before`).
 
 ## Module: `parametric-kit/viewer`
 

@@ -202,6 +202,80 @@ describe("renderPanel presets", () => {
   });
 });
 
+describe("renderPanel collapsible", () => {
+  function mountCollapsible(collapsible: Parameters<typeof renderPanel>[3]["collapsible"]) {
+    const container = document.createElement("div");
+    renderPanel(container, schema, defaults(schema), {
+      onChange: () => {},
+      collapsible,
+      groups: [
+        { id: "cards", title: "Cards", open: true },
+        { id: "lid", title: "Lid" },
+        { id: "snap" }, // title-less: continues (and collapses with) the Lid section
+        { id: "notch", title: "Retrieval" },
+      ],
+    });
+    return container;
+  }
+
+  test("titled groups become <details><summary><h2>, honouring per-group open defaults", () => {
+    const container = mountCollapsible(true);
+    const sections = [...container.querySelectorAll<HTMLDetailsElement>("details.group")];
+    expect(sections.length).toBe(3);
+    expect(container.querySelectorAll("section.group").length).toBe(0);
+    expect(sections.map((d) => d.querySelector("summary h2")?.textContent)).toEqual([
+      "Cards",
+      "Lid",
+      "Retrieval",
+    ]);
+    expect(sections.map((d) => d.open)).toEqual([true, false, false]); // default closed
+    // The title-less snap group landed inside the Lid details, not in a section of its own.
+    const snapRange = row(container, "Snap engagement").range;
+    expect(snapRange.closest("details")).toBe(sections[1]);
+  });
+
+  test("a leading title-less group falls back to a plain section", () => {
+    const container = document.createElement("div");
+    renderPanel(container, schema, defaults(schema), {
+      onChange: () => {},
+      collapsible: true,
+      groups: [{ id: "cards" }, { id: "lid", title: "Lid" }],
+    });
+    expect(container.querySelectorAll("section.group").length).toBe(1);
+    expect(container.querySelectorAll("details.group").length).toBe(1);
+  });
+
+  test("user toggles persist under the key and win over the app's open defaults", () => {
+    const blob = new Map<string, string>();
+    const storage = {
+      getItem: (k: string) => blob.get(k) ?? null,
+      setItem: (k: string, v: string) => void blob.set(k, v),
+      removeItem: (k: string) => void blob.delete(k),
+    };
+    const first = mountCollapsible({ key: "test:collapse", storage });
+    const lid = [...first.querySelectorAll<HTMLDetailsElement>("details.group")][1]!;
+    lid.open = true;
+    lid.dispatchEvent(new Event("toggle"));
+    expect(JSON.parse(blob.get("test:collapse")!)).toMatchObject({ lid: true });
+
+    // A fresh panel over the same storage reopens Lid despite its default-closed spec.
+    const second = mountCollapsible({ key: "test:collapse", storage });
+    const reopened = [...second.querySelectorAll<HTMLDetailsElement>("details.group")];
+    expect(reopened.map((d) => d.open)).toEqual([true, true, false]);
+  });
+
+  test("unreadable persisted state degrades to the app's defaults", () => {
+    const storage = {
+      getItem: () => "not json",
+      setItem: () => {},
+      removeItem: () => {},
+    };
+    const container = mountCollapsible({ key: "test:collapse", storage });
+    const sections = [...container.querySelectorAll<HTMLDetailsElement>("details.group")];
+    expect(sections.map((d) => d.open)).toEqual([true, false, false]);
+  });
+});
+
 describe("panel.sync", () => {
   test("pushes external param mutations (reset) back into every input and select", () => {
     const params = { ...defaults(schema), cardCount: 60, lidStyle: "snap" as const };
