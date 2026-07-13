@@ -348,6 +348,13 @@ toggles) is app chrome: keep it out of the schema (it must not persist or dirty 
 a hand-written `<section class="group">` after the `#controls` div reusing the same row/sel classes,
 and have its listeners call `rebuild()` directly.
 
+For small viewports, `installPanelCollapse(panelEl, headerEl, { startCollapsed })` (from
+`parametric-kit/params`) collapses the whole `#panel` overlay to its `h1`: it appends a
+`.panel-collapse` toggle button into the header and flips a `collapsed` class on the panel — the
+app's CSS supplies `#panel.collapsed > :not(h1) { display: none }` / `#panel.collapsed { width:
+auto }` and button styling. Pass `startCollapsed: matchMedia("(max-width: 640px)").matches` so
+phones land with the preview visible. State is intentionally not persisted.
+
 ## Site registration (jonas-jensen.com embedded app)
 
 The app is the source of truth and deploys itself; the site only proxies + registers it. Pushing the

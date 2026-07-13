@@ -12,3 +12,6 @@ export type { Preset, PresetGroup } from "./presets.ts";
 
 export { renderPanel } from "./panel.ts";
 export type { CollapseSpec, GroupSpec, HintSpec, Panel, RenderPanelOptions } from "./panel.ts";
+
+export { installPanelCollapse } from "./panel-collapse.ts";
+export type { PanelCollapse } from "./panel-collapse.ts";
