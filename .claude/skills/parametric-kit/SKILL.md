@@ -1,6 +1,6 @@
 ---
 name: parametric-kit
-description: Building or modifying a browser-based parametric fabrication-file generator app — 3D printing (manifold-3d CSG → STL) or laser cutting (2D panel outlines → SVG), both with a tuned Three.js preview built from the same geometry that exports — or consuming/extending the parametric-kit library (subpath modules /csg /params /viewer /readout /export /testkit). Load when writing a param schema, dims(), pure geometry/panel builders, viewer/panel wiring, or the GitHub-Pages + jonas-jensen.com deploy for such an app.
+description: Building or modifying a browser-based parametric fabrication-file generator app — 3D printing (manifold-3d CSG → STL) or laser cutting (2D panel outlines → SVG), both with a tuned Three.js preview built from the same geometry that exports — or consuming/extending the parametric-kit library (subpath modules /csg /params /viewer /readout /export /laser /testkit). Load when writing a param schema, dims(), pure geometry/panel builders, viewer/panel wiring, or the GitHub-Pages + jonas-jensen.com deploy for such an app.
 ---
 
 # parametric-kit
@@ -320,25 +320,40 @@ build`) → `upload-pages-artifact path: dist`; a `deploy` job needs it. `base: 
     bundle path-agnostic.
 12. **Register on jonas-jensen.com** (see next section).
 
-## Variant: 2D-panel apps (laser cutting) — proven by laser-mtg-deck-box
+## Variant: 2D-panel apps (laser cutting) — `parametric-kit/laser`
 
-The kit carries a flat-panel generator (outlines → SVG cut files) with only these deltas from the
-recipe above:
+The kit carries the flat-panel plumbing (extracted from laser-mtg-deck-box and the parametric-shop
+product packages) with only these deltas from the recipe above:
 
 - **No CSG:** skip `manifold-3d` and `parametric-kit/csg` entirely. Silence the kit's peer warning
   in `pnpm-workspace.yaml`: `peerDependencyRules.ignoreMissing: ["manifold-3d"]`. No `initCSG`
   anywhere — tests are pure Node from line one.
 - **Geometry model:** instead of `Params -> BufferGeometry`, builders produce a serializable
-  `Panel[]` — `{ id, outline: [x,y][] (closed CCW, kerf-compensated), holes (CW), size, place }` —
-  consumed by BOTH the SVG exporter and the 3D preview, so cut file and preview can't drift. The
-  preview extrudes outlines with `THREE.ExtrudeGeometry` (wire `holes` via `THREE.Path`; material
-  group 0 = sheet faces, group 1 = cut walls — tint the walls darker as end grain so joints read).
-- **Export:** build the SVG string yourself (real-mm `width`/`viewBox`, one path per part,
-  hairline stroke) and ship it with `downloadText(name, svg, "image/svg+xml")`. Lay parts out with
-  a shelf packer honoring a part gap; report oversize parts instead of dropping them.
-- **Kerf belongs in the outline math** (grow fingers/shrink slots at joint boundaries), never as a
-  polygon post-offset; keep each panel's outer envelope nominal.
-- **Tests:** `pointInPolygon`/`signedArea` from testkit + interval math on shared edges
+  `Panel[]` (type from `parametric-kit/laser`) — `{ id, outline: [x,y][] (closed CCW,
+kerf-compensated), holes (CW), size, place }` — consumed by BOTH the SVG exporter and the 3D
+  preview, so cut file and preview can't drift.
+- **`parametric-kit/laser`** (pure math, safe for servers/tests — never imports three):
+  - Types `Pt`/`Place`/`Panel`/`Interval`/`Placement`/`Sheet`/`Layout`/`SheetSpec`.
+  - Finger joints: `fingerCount` (largest odd n, ≥0.6·fingerWidth segments), `isFinger`,
+    `combBreakpoints`/`combIntervals` — kerf shifts every INTERNAL boundary k/2 toward the slot;
+    envelopes stay nominal. Kerf belongs in this outline math, never a polygon post-offset.
+  - Placement: `applyPlace(pt, place)` (world = Rz·Ry·Rx·local + pos), `placeMatrix(place)`
+    (column-major, for `Matrix4.fromArray`).
+  - Outline helpers: `dedupe(pts)`, `circleCW(cx, cy, r, segs=24)` (CW hole winding).
+  - Packing: `layoutSheets(panels, {sheetW, sheetH, gap}, {materialOf?, pin?})` — shelf-packs
+    tallest-first, one material per sheet (null/body group first, then slug order), reports
+    `oversize` ids instead of dropping parts; `pin: "lid"` reserves the first sheet's bottom-left
+    corner for that panel (pre-foilable known spot). `sheetLabel(sheets, idx)` →
+    `"sheet-2-acrylic"` fragments for download names.
+  - Areas: `panelArea`/`totalPanelArea`/`materialPanelArea` (shoelace, holes subtracted) — feed
+    weight/price readouts.
+  - SVG: `sheetSvg(sheet, {sheetW, sheetH}, {prelude?})` — real-mm hairline cut paths, one path
+    per part, y-flip handled; `prelude` injects filled engrave/foil layers before the cut paths.
+    `fmtMm` formats mm for filenames. Ship with `downloadText(name, svg, "image/svg+xml")`.
+- **`parametric-kit/laser/preview`** (imports three — keep out of server code):
+  `panelGeometry(panel, thickness)` extrudes outline+holes and bakes in `place` (material group 0
+  = sheet faces, group 1 = cut walls — tint the walls darker as end grain so joints read).
+- **Tests:** `pointInPolygon`/`signedArea` from testkit + `combIntervals` math on shared edges
   (complementarity: fingers of one panel exactly partition against the mating panel's slots).
 
 ## App-owned view controls (both app kinds)

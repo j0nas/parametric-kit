@@ -12,6 +12,8 @@ export default defineConfig({
       "src/viewer/index.ts",
       "src/readout/index.ts",
       "src/export/index.ts",
+      "src/laser/index.ts",
+      "src/laser/preview.ts",
       "src/testkit/index.ts",
     ],
     dts: {

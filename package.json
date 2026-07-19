@@ -20,6 +20,8 @@
     ".": "./dist/index.mjs",
     "./csg": "./dist/csg/index.mjs",
     "./export": "./dist/export/index.mjs",
+    "./laser": "./dist/laser/index.mjs",
+    "./laser/preview": "./dist/laser/preview.mjs",
     "./params": "./dist/params/index.mjs",
     "./readout": "./dist/readout/index.mjs",
     "./testkit": "./dist/testkit/index.mjs",
