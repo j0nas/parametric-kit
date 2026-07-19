@@ -23,15 +23,18 @@ export function bbox(g: BufferGeometry): Box {
   return { min, max };
 }
 
-// Solid volume (mm³) via the signed-tetrahedron sum — valid because Manifold guarantees a closed mesh.
+// Solid volume (mm³) via the signed-tetrahedron sum — valid on any closed mesh. Works with both
+// indexed geometry (Manifold output) and non-indexed geometry (three's ExtrudeGeometry and
+// friends), where each consecutive position triplet is a triangle.
 export function volume(g: BufferGeometry): number {
   const pos = g.getAttribute("position");
-  const idx = g.index!;
+  const idx = g.index;
+  const triCount = idx ? idx.count : pos.count;
   let v = 0;
-  for (let i = 0; i < idx.count; i += 3) {
-    const a = idx.getX(i);
-    const b = idx.getX(i + 1);
-    const c = idx.getX(i + 2);
+  for (let i = 0; i < triCount; i += 3) {
+    const a = idx ? idx.getX(i) : i;
+    const b = idx ? idx.getX(i + 1) : i + 1;
+    const c = idx ? idx.getX(i + 2) : i + 2;
     const ax = pos.getX(a),
       ay = pos.getY(a),
       az = pos.getZ(a);

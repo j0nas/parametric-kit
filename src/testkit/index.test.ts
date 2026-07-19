@@ -15,6 +15,12 @@ describe("volume", () => {
     expect(volume(new BoxGeometry(2, 2, 2))).toBeCloseTo(8, 6);
     expect(volume(new BoxGeometry(3, 4, 5))).toBeCloseTo(60, 6);
   });
+
+  test("handles non-indexed geometry (ExtrudeGeometry et al. ship without an index)", () => {
+    const g = new BoxGeometry(3, 4, 5).toNonIndexed();
+    expect(g.index).toBeNull();
+    expect(volume(g)).toBeCloseTo(60, 6);
+  });
 });
 
 describe("verticesOnDisc", () => {

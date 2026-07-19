@@ -143,7 +143,7 @@ export type Viewer = {
   render: () => void; // force one synchronous render now (automation/capture; bypasses rAF)
   frameCamera: (objects: Object3D[]) => void; // fit the camera around the given objects
   start: () => void; // begin the render loop
-  dispose: () => void; // tear down: stop the loop, drop the resize listener, free GPU resources
+  dispose: () => void; // tear down: stop the loop, drop the resize observer, free GPU resources
 };
 
 export function createViewer(container: HTMLElement, options: ViewerOptions = {}): Viewer {
@@ -157,6 +157,12 @@ export function createViewer(container: HTMLElement, options: ViewerOptions = {}
   renderer.shadowMap.type = PCFShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.outputColorSpace = SRGBColorSpace;
+  // The canvas must never drive layout: a fixed pixel width (three's default setSize
+  // style) becomes the container's min-content size, so one transiently-wide
+  // measurement (mobile URL-bar churn, hydration) props the page open forever — the
+  // container can grow but never shrink back. CSS-size it to the container and keep
+  // setSize() off the style (updateStyle=false in resize()).
+  Object.assign(renderer.domElement.style, { display: "block", width: "100%", height: "100%" });
   container.appendChild(renderer.domElement);
 
   const scene = new Scene();
@@ -224,12 +230,16 @@ export function createViewer(container: HTMLElement, options: ViewerOptions = {}
   function resize(): void {
     const w = container.clientWidth;
     const h = container.clientHeight;
-    renderer.setSize(w, h);
+    if (w === 0 || h === 0) return; // display:none / not yet laid out — keep the last good aspect
+    renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     invalidate();
   }
-  window.addEventListener("resize", resize);
+  // Observe the container, not the window: panels, grid tracks and mobile viewports
+  // resize the container without any window resize event.
+  const resizeObserver = new ResizeObserver(resize);
+  resizeObserver.observe(container);
   resize();
 
   function start(): void {
@@ -241,7 +251,7 @@ export function createViewer(container: HTMLElement, options: ViewerOptions = {}
 
   function dispose(): void {
     renderer.setAnimationLoop(null);
-    window.removeEventListener("resize", resize);
+    resizeObserver.disconnect();
     controls.dispose();
     pmrem.dispose();
     renderer.dispose();
