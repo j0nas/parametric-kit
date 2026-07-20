@@ -8,7 +8,8 @@
 // with a `title` opens a new <section>; a title-less group continues the current one — that is how a
 // single visual section (e.g. "Shell") holds several independently-hideable groups (its rows, the
 // opening-size row, the body-style hint). DOM uses the same class names the apps already style:
-// `.group` / `.row` / `.sel` / `.toggle` / `.sub`.
+// `.group` / `.row` / `.sel` / `.toggle` / `.sub` (plus `.unit`, a span after the value input of
+// num fields that declare a `unit`).
 //
 // With `collapsible` set, every titled group renders as <details class="group"> with its heading
 // inside <summary><h2> — an accordion of independently collapsible sections, native and keyboard-
@@ -161,6 +162,12 @@ export function renderPanel<S extends Schema>(
     });
 
     row.append(label, range, text);
+    if (field.unit) {
+      const unit = doc.createElement("span");
+      unit.className = "unit";
+      unit.textContent = field.unit;
+      row.append(unit);
+    }
     block.append(row);
   };
 

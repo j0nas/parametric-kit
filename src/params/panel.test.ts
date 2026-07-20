@@ -19,7 +19,15 @@ const schema = defineParams({
     label: "Closure",
     optionLabels: { friction: "Friction fit", snap: "Snap fit", magnet: "Magnets" },
   }),
-  lipHeight: num({ def: 13, min: 6, max: 25, step: 0.5, group: "lid", label: "Lip height" }),
+  lipHeight: num({
+    def: 13,
+    min: 6,
+    max: 25,
+    step: 0.5,
+    group: "lid",
+    label: "Lip height",
+    unit: "mm",
+  }),
   snapBump: num({
     def: 0.3,
     min: 0.1,
@@ -90,6 +98,15 @@ describe("renderPanel structure", () => {
     expect(container.querySelectorAll(".row").length).toBe(4); // cardCount, lipHeight, snapBump, notchDepth
     expect(container.querySelectorAll("label.sel select").length).toBe(2); // deck preset + closure
     expect(container.querySelectorAll("label.toggle input").length).toBe(1); // showRail
+  });
+
+  test("a num field's unit renders as a span after the value input; unitless rows get none", () => {
+    const { container } = mount(defaults(schema));
+    const lip = row(container, "Lip height");
+    const unit = lip.text.nextElementSibling;
+    expect(unit?.className).toBe("unit");
+    expect(unit?.textContent).toBe("mm");
+    expect(row(container, "Card count").text.nextElementSibling).toBeNull();
   });
 
   test("initial inputs reflect the params", () => {

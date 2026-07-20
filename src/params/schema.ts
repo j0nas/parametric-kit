@@ -11,6 +11,9 @@ export type NumField = {
   step: number;
   group: string;
   label?: string;
+  // Unit shown next to the value ("mm", "°"). Display-only — values stay raw numbers in the
+  // field's native unit. Omit for unitless counts.
+  unit?: string;
   // Upper bound tracks another num field's live value instead of `max` (e.g. notch depth ≤ lip
   // height). Neither source app applies a multiplier, so the ceiling is that field's raw value.
   maxKey?: string;
