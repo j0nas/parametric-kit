@@ -356,6 +356,24 @@ kerf-compensated), holes (CW), size, place }` — consumed by BOTH the SVG expor
 - **Tests:** `pointInPolygon`/`signedArea` from testkit + `combIntervals` math on shared edges
   (complementarity: fingers of one panel exactly partition against the mating panel's slots).
 
+## Module: `parametric-kit/gridfinity`
+
+Gridfinity (42 × 42 mm grid, 7 mm height units) support — reach for this whenever a container
+or organizer product should offer a Gridfinity variant instead of hand-deriving the spec.
+
+- Spec constants: `GRID` (42), `UNIT_H` (7), `BIN_CLEAR` (0.5 — bins run 41.5 per cell),
+  `CORNER_R` (3.75), foot profile (`BASE_LOWER_CH`/`BASE_STRAIGHT`/`BASE_UPPER_CH`, `BASE_H`
+  = 4.75, `FOOT_TOP` 41.5 / `FOOT_BOT` 35.6), magnet pocket spec (`MAGNET_D` 6.5, `MAGNET_H`
+  2.4, `MAGNET_SPACING` 26).
+- Snapping math (pure, safe anywhere): `unitsFor(mm)` → cells covering an outside dimension,
+  `binSpan(units)` → bin footprint (n·42 − 0.5), `binHeight(rawMm)` → snap UP to whole 7 mm
+  units, `cellCenter(cols, rows, i, j)`.
+- `gridfinityBase(s: Scope, cols, rows, {magnets?})` → tracked `Solid`: one chamfered foot per
+  cell, z = 0..4.75, footprint centred on origin. The app unions its bin body on top from
+  z = BASE_H with outer profile `binSpan(cols) × binSpan(rows)`, corner radius `CORNER_R`,
+  and snaps total height with `binHeight(...)`. Foot corners are built proportionally rounded
+  (strictly inside the spec envelope) so bins seat in any spec baseplate; flats are exact.
+
 ## App-owned view controls (both app kinds)
 
 `renderPanel` renders ONLY schema params. View state (preview mode select, explode slider, show/hide
