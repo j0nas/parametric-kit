@@ -32,3 +32,6 @@ Docs are local at `node_modules/vite-plus/docs` or online at https://viteplus.de
   sources.
 - The Claude skill guiding consumers lives at `.claude/skills/parametric-kit/SKILL.md`; keep it
   in sync when public APIs change.
+- Research first; buy, don't build: before implementing a non-trivial feature, do a quick
+  search for best practices and existing libraries to build on; when rolling our own anyway,
+  note why nothing fit.
