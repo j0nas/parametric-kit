@@ -27,6 +27,7 @@
     "./readout": "./dist/readout/index.mjs",
     "./testkit": "./dist/testkit/index.mjs",
     "./viewer": "./dist/viewer/index.mjs",
+    "./worker": "./dist/worker/index.mjs",
     "./package.json": "./package.json"
   },
   "publishConfig": {

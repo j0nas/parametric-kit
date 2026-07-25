@@ -1,6 +1,6 @@
 ---
 name: parametric-kit
-description: Building or modifying a browser-based parametric fabrication-file generator app — 3D printing (manifold-3d CSG → STL) or laser cutting (2D panel outlines → SVG), both with a tuned Three.js preview built from the same geometry that exports — or consuming/extending the parametric-kit library (subpath modules /csg /params /viewer /readout /export /laser /testkit). Load when writing a param schema, dims(), pure geometry/panel builders, viewer/panel wiring, or the GitHub-Pages + jonas-jensen.com deploy for such an app.
+description: Building or modifying a browser-based parametric fabrication-file generator app — 3D printing (manifold-3d CSG → STL) or laser cutting (2D panel outlines → SVG), both with a tuned Three.js preview built from the same geometry that exports — or consuming/extending the parametric-kit library (subpath modules /csg /params /viewer /readout /export /laser /gridfinity /worker /testkit). Load when writing a param schema, dims(), pure geometry/panel builders, viewer/panel wiring, or the GitHub-Pages + jonas-jensen.com deploy for such an app.
 ---
 
 # parametric-kit
@@ -311,7 +311,8 @@ shoelace area, positive ⇔ CCW winding (y-up), so it doubles as a winding asser
 7. **`src/shapes.ts`** — 2D `THREE.Shape` profiles; **keep every cutout self-supporting** (45° rule).
 8. **`src/<model>.ts`** — pure `Params -> BufferGeometry` builders via `scope()`, in print orientation.
 9. **`src/main.ts`** — `await initCSG(wasmUrl)`; `createViewer`; `store.load()`; `renderPanel`;
-   `rebuild()` coalesced to one call per frame with `requestAnimationFrame`; preset selects;
+   `rebuild()` coalesced to one call per frame with `requestAnimationFrame` — or, when builds
+   outgrow a frame (live-slider stutter), moved off-thread via `parametric-kit/worker`; preset selects;
    `exportSTL`; `installAppHook`.
 10. **`src/<model>.test.ts`** — testkit probes + `beforeAll(() => initCSG())`.
 11. **`.github/workflows/deploy.yml`** — GitHub Pages workflow. The **build job runs the tests** before
@@ -373,6 +374,44 @@ or organizer product should offer a Gridfinity variant instead of hand-deriving 
   z = BASE_H with outer profile `binSpan(cols) × binSpan(rows)`, corner radius `CORNER_R`,
   and snaps total height with `binHeight(...)`. Foot corners are built proportionally rounded
   (strictly inside the spec envelope) so bins seat in any spec baseplate; flats are exact.
+
+## Module: `parametric-kit/worker`
+
+Off-main-thread geometry builds. A CSG rebuild blocks longer than a frame, so building on the
+main thread freezes the very slider driving it — and debouncing just trades the freeze for a
+dead preview. Builders are pure `Params -> BufferGeometry`, so they run in a Web Worker
+unchanged; reach for this whenever live-slider rebuilds stutter (heavy CSG: text glyphs, many
+unioned pieces). Scheduling is **latest-wins on the client**: at most one request in flight,
+mid-drag values dropped (never queued) — call `request()` on every input event by design.
+
+```ts
+// worker entry (its own file; the whole thing):
+import wasmUrl from "manifold-3d/manifold.wasm?url";
+import { initCSG } from "parametric-kit/csg";
+import { geometryTransferables, packGeometry, serveBuilds } from "parametric-kit/worker";
+serveBuilds<Req, Res>(
+  ({ params }) => ({ body: packGeometry(buildBody(params)) }), // throw = per-request error, keeps serving
+  { init: () => initCSG(wasmUrl), transfer: (res) => geometryTransferables([res.body]) },
+);
+
+// main thread:
+import { createBuildClient, unpackGeometry } from "parametric-kit/worker";
+const client = createBuildClient<Req, Res>(
+  () => new Worker(new URL("./build-worker.ts", import.meta.url), { type: "module" }),
+);
+client.onResult((res) => swapMesh(unpackGeometry(res.body))); // subscribe BEFORE first request
+client.onError((msg) => console.error(msg));
+client.request({ params }); // fire-and-forget, on every change
+```
+
+- Worker creation is lazy (first `request()`), so importing a module-scope client is SSR-safe.
+- `packGeometry`/`unpackGeometry` carry attributes, index AND material groups (laser cap/wall
+  pairs survive); `geometryTransferables` builds the deduped transfer list so buffers move,
+  not copy. Compute `volumeCm3` worker-side and return it with the packed result — then the
+  main thread needs no CSG at all (keep `creased()` main-side, on the unpacked geometry).
+- Results echo enough of the request (e.g. product id) for the client to drop stale ones when
+  the consumer outlives a pending build (persistent worker + page navigation).
+- Both sides take injectable Worker/scope fakes — scheduling is unit-testable in Node.
 
 ## App-owned view controls (both app kinds)
 
