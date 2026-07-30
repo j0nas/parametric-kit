@@ -24,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        repo: [j0nas/laser-mtg-deck-box]
+        repo: [j0nas/laser-mtg-deck-box, j0nas/lamp-shade-designer]
     steps:
       - run: gh api -X POST repos/${{ matrix.repo }}/dispatches -f event_type=kit-updated
         env:
