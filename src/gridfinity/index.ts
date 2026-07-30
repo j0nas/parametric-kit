@@ -11,8 +11,8 @@
 // bins actually register, are exact, and the foot's top matches the 41.5 / r 3.75 bin body
 // exactly so the seam is invisible.
 
-import { Shape } from "three";
 import type { Scope, Solid } from "../csg/index.ts";
+import { circle, roundedRect } from "../shapes/index.ts";
 
 /** Grid pitch: one cell is 42 × 42 mm. */
 export const GRID = 42;
@@ -59,31 +59,6 @@ export function binHeight(rawMm: number): number {
 /** Centre of cell (i, j) in a cols × rows bin footprint centred on the origin. */
 export function cellCenter(cols: number, rows: number, i: number, j: number): [number, number] {
   return [(i - (cols - 1) / 2) * GRID, (j - (rows - 1) / 2) * GRID];
-}
-
-// Local rounded rectangle (the kit keeps app profiles in apps; this one IS the spec's).
-function roundedRect(w: number, l: number, radius: number): Shape {
-  const s = new Shape();
-  const hw = w / 2;
-  const hl = l / 2;
-  const r = Math.max(Math.min(radius, hw - 0.01, hl - 0.01), 0);
-  s.moveTo(-hw + r, -hl);
-  s.lineTo(hw - r, -hl);
-  s.absarc(hw - r, -hl + r, r, -Math.PI / 2, 0, false);
-  s.lineTo(hw, hl - r);
-  s.absarc(hw - r, hl - r, r, 0, Math.PI / 2, false);
-  s.lineTo(-hw + r, hl);
-  s.absarc(-hw + r, hl - r, r, Math.PI / 2, Math.PI, false);
-  s.lineTo(-hw, -hl + r);
-  s.absarc(-hw + r, -hl + r, r, Math.PI, Math.PI * 1.5, false);
-  s.closePath();
-  return s;
-}
-
-function circle(r: number): Shape {
-  const s = new Shape();
-  s.absarc(0, 0, r, 0, Math.PI * 2, false);
-  return s;
 }
 
 // One foot (z = 0 .. BASE_H), centred on the origin: three stacked extrusions of similar

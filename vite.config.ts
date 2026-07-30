@@ -8,6 +8,7 @@ export default defineConfig({
     entry: [
       "src/index.ts",
       "src/csg/index.ts",
+      "src/shapes/index.ts",
       "src/params/index.ts",
       "src/viewer/index.ts",
       "src/readout/index.ts",

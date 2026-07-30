@@ -25,8 +25,11 @@ import { BufferAttribute, BufferGeometry, type Shape } from "three";
 export type Solid = Manifold;
 
 // A column-major 4×4 affine matrix (Manifold ignores the last row). Used for 90° axis swaps, for
-// which Manifold has exact (rounding-free) code paths.
+// which Manifold has exact (rounding-free) code paths. Named quarter-turn constants and
+// rotZDeg() live in mat.ts and are re-exported below.
 export type Mat = Parameters<Manifold["transform"]>[0];
+
+export * from "./mat.ts";
 
 let api: Awaited<ReturnType<typeof Module>> | null = null;
 
