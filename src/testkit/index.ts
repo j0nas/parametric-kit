@@ -26,7 +26,18 @@ export function bbox(g: BufferGeometry): Box {
 // Solid volume (mm³) via the signed-tetrahedron sum — valid on any closed mesh. Works with both
 // indexed geometry (Manifold output) and non-indexed geometry (three's ExtrudeGeometry and
 // friends), where each consecutive position triplet is a triangle.
+//
+// NOTE: this returns the ABSOLUTE value, so it cannot distinguish a solid from its inside-out twin
+// — an inverted mesh measures as perfectly healthy here. Use signedVolume() when orientation is
+// what's under test (e.g. validating a hand-generated surface).
 export function volume(g: BufferGeometry): number {
+  return Math.abs(signedVolume(g));
+}
+
+// Signed volume (mm³): positive when triangles wind CCW seen from outside, negative when the mesh
+// is inside-out. Manifold accepts a uniformly inverted mesh with NoError status, so this is the only
+// way to catch that in a test.
+export function signedVolume(g: BufferGeometry): number {
   const pos = g.getAttribute("position");
   const idx = g.index;
   const triCount = idx ? idx.count : pos.count;
@@ -46,7 +57,7 @@ export function volume(g: BufferGeometry): number {
       cz = pos.getZ(c);
     v += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
   }
-  return Math.abs(v);
+  return v;
 }
 
 // --- 2D polygon probes (panel/outline apps) --------------------------------------------------

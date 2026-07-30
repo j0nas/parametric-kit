@@ -68,6 +68,13 @@ Scope surface (verify signatures against `src/csg/index.ts` when in doubt):
 - `extrude(shape, height, curveSegments=12, scaleTop={x,y})` — extrude a `THREE.Shape` (its `.holes`
   read as holes, EvenOdd) up +Z from z=0. `scaleTop<1` tapers into a frustum about the local origin.
 - `box(w,d,h)` origin-centred · `union(parts[])` · `sub(a,b)` · `add(a,b)` · `intersect(a,b)`
+- `fromMesh(verts: Float32Array, tris: Uint32Array)` — adopt a caller-generated triangle mesh for
+  parametric surfaces no extrude/revolve can express (a shell swept from an arbitrary silhouette ×
+  cross-section × twist). Flat xyz + indices, CCW from outside. The mesh must be **pre-indexed**
+  (shared vertices at seams) and watertight; it deliberately passes no merge vectors because
+  `Mesh.merge()` leaks WASM memory in 3.5.1. Measured: generating a 128×80 shell, adopting it, and
+  batch-cutting 360 perforations is ~130 ms with **zero** heap growth over 200 rebuilds — pair it
+  with `parametric-kit/worker`, since that's still far longer than a frame.
 - `move(a,x,y,z)` · `transform(a, mat)` — column-major 4×4 for exact 90° axis swaps (stand a
   face-plane profile upright, lay a cylinder on its side).
 - `finish(final) -> BufferGeometry` — positions + index only; **the caller computes normals** (use
@@ -280,8 +287,11 @@ test("body fills its advertised footprint", () => {
   expect(b.max[0] - b.min[0]).toBeCloseTo(d.outerW, 4);
   expect(b.min[2]).toBeCloseTo(0, 4); // base on the bed
 });
-// volume(g): mm³ signed-tetra sum. verticesOnDisc(g, cx, cy, z, r): count verts on a horizontal
-// disc — proves a pocket floor bottoms out exactly where a feature (e.g. a magnet) should.
+// volume(g): mm³, ABSOLUTE — it cannot tell a solid from its inside-out twin. signedVolume(g):
+// same sum with the sign kept (positive = CCW from outside); the only way to catch an inverted
+// hand-generated surface, since Manifold accepts one with NoError status.
+// verticesOnDisc(g, cx, cy, z, r): count verts on a horizontal disc — proves a pocket floor
+// bottoms out exactly where a feature (e.g. a magnet) should.
 ```
 
 2D-panel apps get polygon probes instead (no WASM, no `initCSG`):
@@ -457,6 +467,11 @@ app's `main` redeploys and the desktop serves it live — no commit on the site 
   so a screenshot can capture a stale/blank frame. Instead drive the dev `__app` hook
   (`installAppHook`): set params → `rebuild()` → `render()` (synchronous, bypasses rAF) → read
   `canvas.toDataURL()`.
+- **A uniformly inverted mesh is NOT caught by Manifold.** Measured on 3.5.1: an inside-out closed
+  mesh returns `status: NoError` with a _negative_ volume, and testkit's unsigned `volume()` reports
+  it as perfectly healthy — it exports as an STL slicers silently mangle. `fromMesh()` guards on the
+  sign for you; assert with `signedVolume()`, never `volume()`, when orientation is what's at stake.
+  (Mixed winding and gaps _do_ throw `Not manifold`, so only the uniform case needs the guard.)
 - **Keep every cutout profile self-supporting (45° rule):** teardrop arches, semicircular slot/notch
   bottoms, point-up hexes — so parts print without supports and preview == print.
 - **`sanitize` semantics are contractual — don't loosen them.** Non-object root → all defaults;

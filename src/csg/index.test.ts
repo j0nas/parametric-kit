@@ -4,7 +4,7 @@
 
 import { Shape } from "three";
 import { beforeAll, describe, expect, test } from "vite-plus/test";
-import { bbox, volume } from "../testkit/index.ts";
+import { bbox, signedVolume, volume } from "../testkit/index.ts";
 import { initCSG, type Mat, scope } from "./index.ts";
 
 beforeAll(async () => {
@@ -64,6 +64,86 @@ describe("transforms", () => {
     expect(b.max[1] - b.min[1]).toBeCloseTo(20, 4);
     expect(b.max[2] - b.min[2]).toBeCloseTo(10, 4);
     expect(volume(g)).toBeCloseTo(2000, 3);
+  });
+});
+
+describe("fromMesh (caller-generated parametric surfaces)", () => {
+  // A cube as 8 shared vertices + 12 triangles, CCW seen from outside — the minimal properly
+  // indexed watertight mesh, i.e. exactly the shape a swept shell must have to be adoptable.
+  const cube = (s: number) => {
+    // verts 0..3 = bottom ring CCW, 4..7 = top ring; two triangles per face, CCW from outside.
+    const corners: [number, number, number][] = [
+      [0, 0, 0],
+      [s, 0, 0],
+      [s, s, 0],
+      [0, s, 0],
+      [0, 0, s],
+      [s, 0, s],
+      [s, s, s],
+      [0, s, s],
+    ];
+    const faces: [number, number, number][] = [
+      [0, 3, 2], // −Z
+      [0, 2, 1],
+      [4, 5, 6], // +Z
+      [4, 6, 7],
+      [0, 1, 5], // −Y
+      [0, 5, 4],
+      [1, 2, 6], // +X
+      [1, 6, 5],
+      [2, 3, 7], // +Y
+      [2, 7, 6],
+      [3, 0, 4], // −X
+      [3, 4, 7],
+    ];
+    return { verts: new Float32Array(corners.flat()), tris: faces.flat() };
+  };
+
+  test("adopts an indexed watertight mesh with volume and bounds intact", () => {
+    const { verts, tris } = cube(10);
+    const s = scope();
+    const g = s.finish(s.fromMesh(verts, new Uint32Array(tris)));
+    expect(volume(g)).toBeCloseTo(1000, 3);
+    const b = bbox(g);
+    expect(b.min[2]).toBeCloseTo(0, 6);
+    expect(b.max[0] - b.min[0]).toBeCloseTo(10, 6);
+  });
+
+  test("the adopted solid is positively oriented, not an inside-out twin", () => {
+    const { verts, tris } = cube(10);
+    const s = scope();
+    // volume() is unsigned and so cannot see orientation; signedVolume() can.
+    expect(signedVolume(s.finish(s.fromMesh(verts, new Uint32Array(tris))))).toBeCloseTo(1000, 3);
+  });
+
+  test("a gapped mesh throws rather than yielding an unprintable solid", () => {
+    const { verts, tris } = cube(10);
+    const s = scope();
+    // Drop one triangle: the surface is no longer closed, so this must fail loudly.
+    expect(() => s.fromMesh(verts, new Uint32Array(tris.slice(0, -3)))).toThrow(/not manifold/i);
+  });
+
+  test("mixed winding throws — one face wound the wrong way is not a surface", () => {
+    const { verts, tris } = cube(10);
+    const mixed = new Uint32Array(tris);
+    [mixed[1], mixed[2]] = [mixed[2], mixed[1]];
+    const s = scope();
+    expect(() => s.fromMesh(verts, mixed)).toThrow(/not manifold/i);
+  });
+
+  test("a uniformly inverted mesh is rejected even though Manifold accepts it", () => {
+    // Measured against manifold-3d 3.5.1: ofMesh() returns status NoError and volume −1000 for an
+    // inside-out cube. That exports as a mangled STL, and testkit's unsigned volume() would call it
+    // healthy, so fromMesh() guards on the sign itself.
+    const { verts, tris } = cube(10);
+    const flipped = new Uint32Array(tris.length);
+    for (let t = 0; t < tris.length; t += 3) {
+      flipped[t] = tris[t];
+      flipped[t + 1] = tris[t + 2];
+      flipped[t + 2] = tris[t + 1];
+    }
+    const s = scope();
+    expect(() => s.fromMesh(verts, flipped)).toThrow(/inside-out/);
   });
 });
 

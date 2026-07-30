@@ -84,6 +84,14 @@ export type Scope = {
     scaleTop?: { x: number; y: number },
   ) => Solid;
   box: (w: number, d: number, h: number) => Solid; // origin-centred box (matches BoxGeometry)
+  // Adopt a caller-generated triangle mesh as a solid — for parametric surfaces that no extrude or
+  // revolve can express (a shell swept from an arbitrary silhouette x cross-section x twist).
+  // `verts` is flat xyz; `tris` indexes it, CCW seen from outside. The mesh must already be indexed
+  // (shared vertices, no duplicates at seams) and watertight: this deliberately passes NO merge
+  // vectors, because Mesh.merge() leaks WASM memory on every call in 3.5.1 — the same reason
+  // extrude() drives the private _Extrude binding. Manifold throws if the result isn't 2-manifold,
+  // so a mis-wound or gapped mesh fails loudly here rather than producing a bad STL.
+  fromMesh: (verts: Float32Array, tris: Uint32Array) => Solid;
   union: (parts: Solid[]) => Solid; // merge many solids into one
   sub: (a: Solid, b: Solid) => Solid;
   add: (a: Solid, b: Solid) => Solid;
@@ -127,6 +135,21 @@ export function scope(): Scope {
       return keep(man);
     },
     box: (w, d, h) => keep(mf().Manifold.cube([w, d, h], true)),
+    fromMesh: (verts, tris) => {
+      const m = mf();
+      const mesh = new m.Mesh({ numProp: 3, vertProperties: verts, triVerts: tris });
+      const solid = m.Manifold.ofMesh(mesh); // throws "Not manifold" on gaps or mixed winding
+      // A *uniformly* inverted mesh is NOT caught by ofMesh: it reports NoError and a negative
+      // volume, which exports as an inside-out STL that slicers silently mangle. Worse, testkit's
+      // volume() is unsigned and would report it as healthy. Reject it here instead.
+      if (solid.volume() < 0) {
+        solid.delete();
+        throw new Error(
+          "fromMesh: mesh is inside-out (negative volume) — reverse the triangle winding so it reads CCW from outside",
+        );
+      }
+      return keep(solid);
+    },
     union: (parts) => keep(mf().Manifold.union(parts)),
     sub: (a, b) => keep(a.subtract(b)),
     add: (a, b) => keep(a.add(b)),
