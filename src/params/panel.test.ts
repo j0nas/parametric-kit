@@ -100,13 +100,30 @@ describe("renderPanel structure", () => {
     expect(container.querySelectorAll("label.toggle input").length).toBe(1); // showRail
   });
 
-  test("a num field's unit renders as a span after the value input; unitless rows get none", () => {
+  test("a num field's unit renders inside the value box; unitless rows get the box but no unit", () => {
     const { container } = mount(defaults(schema));
     const lip = row(container, "Lip height");
+    const box = lip.text.parentElement;
+    expect(box?.className).toBe("num");
     const unit = lip.text.nextElementSibling;
     expect(unit?.className).toBe("unit");
     expect(unit?.textContent).toBe("mm");
-    expect(row(container, "Card count").text.nextElementSibling).toBeNull();
+    // Decorative, because the unit is already in the input's accessible name.
+    expect(unit?.getAttribute("aria-hidden")).toBe("true");
+    expect(lip.text.getAttribute("aria-label")).toBe("Lip height (mm)");
+
+    const plain = row(container, "Card count");
+    expect(plain.text.parentElement?.className).toBe("num");
+    expect(plain.text.nextElementSibling).toBeNull();
+  });
+
+  // The wrap this replaced: a bare unit span was a fourth child of a three-column grid.
+  test("the value box, not the raw input, is the row's third grid item", () => {
+    const { container } = mount(defaults(schema));
+    const lip = row(container, "Lip height");
+    const cells = [...(lip.text.closest(".row")?.children ?? [])];
+    expect(cells.length).toBe(3);
+    expect(cells.map((c) => c.tagName.toLowerCase())).toEqual(["label", "input", "span"]);
   });
 
   test("initial inputs reflect the params", () => {

@@ -8,8 +8,9 @@
 // with a `title` opens a new <section>; a title-less group continues the current one — that is how a
 // single visual section (e.g. "Shell") holds several independently-hideable groups (its rows, the
 // opening-size row, the body-style hint). DOM uses the same class names the apps already style:
-// `.group` / `.row` / `.sel` / `.toggle` / `.sub` (plus `.unit`, a span after the value input of
-// num fields that declare a `unit`).
+// `.group` / `.row` / `.sel` / `.toggle` / `.sub` (plus `.num`, the span wrapping every num field's
+// value input, holding a `.unit` span when the field declares one — style `.num` as the input box
+// and the borderless input inside it fills it).
 //
 // With `collapsible` set, every titled group renders as <details class="group"> with its heading
 // inside <summary><h2> — an accordion of independently collapsible sections, native and keyboard-
@@ -116,8 +117,9 @@ export function renderPanel<S extends Schema>(
     const row = doc.createElement("div");
     row.className = "row";
 
+    const labelText = field.label ?? key;
     const label = doc.createElement("label");
-    label.textContent = field.label ?? key;
+    label.textContent = labelText;
 
     const range = doc.createElement("input");
     range.type = "range";
@@ -161,13 +163,25 @@ export function renderPanel<S extends Schema>(
       text.value = format(p[key] as number);
     });
 
-    row.append(label, range, text);
+    // The value input and its unit share one box (`.num`) so the unit can sit INSIDE the field as a
+    // suffix. As a bare fourth child it was a fourth grid item, which wrapped to its own line in any
+    // app whose .row declares three columns. Emitted even for unitless fields so every value column
+    // is the same element and one CSS rule styles them all.
+    const num = doc.createElement("span");
+    num.className = "num";
+    num.append(text);
     if (field.unit) {
+      // Decorative: the unit is part of the input's accessible name below, so a screen reader that
+      // read the span too would announce it twice.
       const unit = doc.createElement("span");
       unit.className = "unit";
       unit.textContent = field.unit;
-      row.append(unit);
+      unit.setAttribute("aria-hidden", "true");
+      num.append(unit);
+      text.setAttribute("aria-label", `${labelText} (${field.unit})`);
     }
+
+    row.append(label, range, num);
     block.append(row);
   };
 

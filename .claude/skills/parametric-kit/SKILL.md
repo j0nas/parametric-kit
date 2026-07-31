@@ -188,7 +188,14 @@ Group semantics: a `title` opens a new `<section class="group">`; a **title-less
 current section** — that is how one visual section holds several independently-hideable groups.
 `maxKey` makes a num slider's ceiling track another field. The panel emits these class names for you
 to style: `.group` (section) · `.row` (num slider) · `.sel` (pick / preset select) · `.toggle`
-(checkbox) · `.sub` (hint). renderPanel calls `sync()` itself on first paint (normalising ceilings).
+(checkbox) · `.sub` (hint) · `.num` (the value box of a num row) · `.unit` (unit suffix inside it,
+only when the field declares `unit`). renderPanel calls `sync()` itself on first paint (normalising
+ceilings).
+
+A num row is three grid items — `label`, the range, and `.num`. Style `.num` as the input box
+(border/background/radius, `display:flex`, `:focus-within` for the ring) and make the input inside it
+borderless and `width:100%`; the unit then reads as a suffix within the field rather than a fourth
+column that wraps. Give the value column enough width for the widest value **plus** its unit.
 
 Accordion: with `collapsible` set, every titled group renders `<details class="group"><summary><h2>`
 instead of a plain section (title-less groups still continue the current one, so they collapse with
