@@ -1,0 +1,23 @@
+droid-sans-bold.typeface.json
+=============================
+
+Droid Sans Bold, converted to three.js typeface JSON.
+
+    Copyright (c) 2005-2008, The Android Open Source Project
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied.
+
+The shim product derives glyph outlines from this font into printed geometry; it
+does not ship the font as a standalone typeface. The file is vendored verbatim
+from three.js (examples/fonts/droid/droid_sans_bold.typeface.json), which
+redistributes the Droid family under the Apache 2.0 license above. (The font's
+embedded nameID-13 string is the original Ascender foundry boilerplate; the
+operative license for the Android Open Source Project release is Apache 2.0.)

@@ -17,6 +17,7 @@ export default defineConfig({
       "src/laser/preview.ts",
       "src/gridfinity/index.ts",
       "src/testkit/index.ts",
+      "src/text/index.ts",
       "src/worker/index.ts",
     ],
     dts: {
