@@ -45,14 +45,13 @@
     "prepare": "vp config"
   },
   "devDependencies": {
-    "@types/node": "^25.6.2",
-    "@types/three": "^0.184.1",
-    "@typescript/native-preview": "7.0.0-dev.20260509.2",
-    "bumpp": "^11.1.0",
-    "happy-dom": "^20.0.0",
-    "manifold-3d": "3.5.1",
-    "three": "^0.184.0",
-    "typescript": "^6.0.3",
+    "@types/node": "^26.6.3",
+    "@types/three": "^0.186.0",
+    "bumpp": "^12.3.0",
+    "happy-dom": "^20.14.5",
+    "manifold-3d": "3.5.4",
+    "three": "^0.186.1",
+    "typescript": "^7.0.2",
     "vite": "catalog:",
     "vite-plus": "catalog:"
   },
@@ -63,9 +62,9 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.11.0",
+      "version": "12.6.0",
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@11.11.0"
+  "packageManager": "pnpm@12.6.0"
 }

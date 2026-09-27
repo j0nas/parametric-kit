@@ -20,8 +20,9 @@ export default defineConfig({
       "src/text/index.ts",
       "src/worker/index.ts",
     ],
+    // TypeScript 7 is the Go-native compiler, so the tsgo generator needs no preview package.
     dts: {
-      tsgo: true,
+      generator: "tsgo",
     },
     exports: true,
   },
