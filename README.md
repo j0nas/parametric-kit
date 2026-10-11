@@ -1,5 +1,10 @@
 # parametric-kit
 
+> **Moved (2026-10-12).** parametric-kit now lives in the formeriet workspace
+> (`j0nas/formeriet`, `packages/parametric-kit`), with this repo's full history and the commits
+> made after it was last pushed here. This repo is archived; lamp-shade-designer's CI still
+> checks it out as it stands.
+
 Shared toolkit for browser-based parametric 3D-print generators — the proven, previously
 copy-pasted core of [parametric-mtg-deck-box](https://github.com/j0nas/parametric-mtg-deck-box)
 and a4-stackable-trays, extracted into one tested library. An app built on it only writes what
